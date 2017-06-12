@@ -19,6 +19,8 @@ class AccessAgent private (system: ActorSystem, config: Config) {
 
   private val askDuration = 3000
 
+  implicit private var timeout = Timeout(askDuration millisecond)
+
   def publish(topic: String, message: Object): Unit ={
     mediator ! Publish(topic, message)
   }
@@ -31,9 +33,8 @@ class AccessAgent private (system: ActorSystem, config: Config) {
     var result: Option[T] = None
 
     // 如果message的过期时间小于1000毫秒则使用系统默认过期时间
-    implicit val timeout =
-      if (message.timeout >= 1000) Timeout(message.timeout millisecond)
-      else Timeout(askDuration millisecond)
+    if (message.timeout >= 1000)
+      timeout = Timeout(message.timeout millisecond)
 
     //    val feature = mediator.ask(message.body)
     val future = mediator ? Send(path = message.actorPath, msg = message.body, localAffinity = true)
